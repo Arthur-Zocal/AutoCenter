@@ -6,7 +6,11 @@ class ProductService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  CollectionReference get _productsRef => _firestore.collection('products');
+  CollectionReference<Map<String, dynamic>> get _productsRef =>
+      _firestore.collection('products').withConverter<Map<String, dynamic>>(
+            fromFirestore: (snapshot, _) => snapshot.data() ?? {},
+            toFirestore: (data, _) => data,
+          );
 
   String get _currentUid => _auth.currentUser?.uid ?? '';
 
@@ -27,32 +31,58 @@ class ProductService {
 
   Stream<List<Product>> getProducts({
     String? category,
-    bool onlyActive = true,
     String? searchQuery,
     String sortField = 'createdAt',
     bool sortDescending = true,
   }) {
-    Query query = _productsRef;
+    Query<Map<String, dynamic>> query = _productsRef;
 
-    if (onlyActive) {
-      query = query.where('ativo', isEqualTo: true);
-    }
-
-    if (category != null && category.isNotEmpty) {
-      query = query.where('categoria', isEqualTo: category);
-    }
-
-    if (searchQuery != null && searchQuery.isNotEmpty) {
-      final lowerQuery = searchQuery.toLowerCase();
-      query = query
-          .where('nome', isGreaterThanOrEqualTo: lowerQuery)
-          .where('nome', isLessThanOrEqualTo: '$lowerQuery\uf8ff');
-    }
-
-    query = query.orderBy(sortField, descending: sortDescending);
+    // Always order by createdAt to avoid composite index requirements
+    // Other filters (category, search) applied in-memory
+    query = query.orderBy('createdAt', descending: true);
 
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+      var products = snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+
+      // In-memory filter by category
+      if (category != null && category.isNotEmpty) {
+        products = products.where((p) => p.categoria == category).toList();
+      }
+
+      // In-memory search by nome, marca, or sku
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        final lowerQuery = searchQuery.toLowerCase();
+        products = products.where((p) {
+          return p.nome.toLowerCase().contains(lowerQuery) ||
+              p.marca.toLowerCase().contains(lowerQuery) ||
+              p.sku.toLowerCase().contains(lowerQuery);
+        }).toList();
+      }
+
+      // In-memory sort (if not createdAt desc which is already sorted)
+      if (sortField != 'createdAt' || !sortDescending) {
+        products.sort((a, b) {
+          int comparison = 0;
+          switch (sortField) {
+            case 'nome':
+              comparison = a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+              break;
+            case 'preco':
+              comparison = a.preco.compareTo(b.preco);
+              break;
+            case 'estoque':
+              comparison = a.estoque.compareTo(b.estoque);
+              break;
+            case 'createdAt':
+            default:
+              comparison = a.createdAt.compareTo(b.createdAt);
+              break;
+          }
+          return sortDescending ? -comparison : comparison;
+        });
+      }
+
+      return products;
     });
   }
 

@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/user_service.dart';
-import '../models/user_model.dart';
 import 'profile_screen.dart';
 import 'products_screen.dart';
 
@@ -60,6 +56,7 @@ class AzHomePage extends StatelessWidget {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Icon(Icons.directions_car, size: 48, color: Color(0xFFD32F2F)),
                     const SizedBox(height: 8),
@@ -134,7 +131,7 @@ class AzHomePage extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ProductsScreen(category: title),
+            builder: (_) => ProductsScreen(initialCategory: title),
           ),
         );
       },

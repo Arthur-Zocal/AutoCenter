@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 enum ProductCategory {
   mecanicaGeral('Mecânica Geral', Icons.build),
@@ -150,5 +151,15 @@ class Product {
     if (estoque == 0) return Colors.red;
     if (estoque <= 5) return Colors.orange;
     return Colors.green;
+  }
+}
+
+extension ProductExtension on Product {
+  String get formattedCreatedAt {
+    return '${createdAt.day.toString().padLeft(2, '0')}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.year}';
+  }
+
+  String get formattedUpdatedAt {
+    return '${updatedAt.day.toString().padLeft(2, '0')}/${updatedAt.month.toString().padLeft(2, '0')}/${updatedAt.year}';
   }
 }

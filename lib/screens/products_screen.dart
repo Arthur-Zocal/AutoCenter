@@ -17,7 +17,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = '';
-  bool _onlyActive = true;
   String _sortField = 'createdAt';
   bool _sortDescending = true;
 
@@ -33,6 +32,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   static const Map<String, String> _sortOptions = {
     'createdAt': 'Mais recentes',
+    'createdAt_desc': 'Mais antigos',
     'nome': 'Nome (A-Z)',
     'nome_desc': 'Nome (Z-A)',
     'preco': 'Preço (Menor)',
@@ -76,31 +76,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         _sortDescending = false;
       }
     });
-  }
-
-  Future<void> _toggleProductStatus(Product product) async {
-    try {
-      await _productService.toggleStatus(product.id, !product.ativo);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            product.ativo ? 'Produto desativado' : 'Produto ativado',
-          ),
-          backgroundColor: product.ativo ? Colors.orange : Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
   }
 
   Future<void> _deleteProduct(Product product) async {
@@ -179,7 +154,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF121212) : Colors.grey.shade50;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
@@ -193,23 +167,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
         foregroundColor: textColor,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(_onlyActive ? Icons.visibility : Icons.visibility_off),
-            onPressed: () => setState(() => _onlyActive = !_onlyActive),
-            tooltip: _onlyActive ? 'Mostrar inativos' : 'Ocultar inativos',
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: ElevatedButton.icon(
+              onPressed: () => _navigateToForm(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+                shadowColor: const Color(0xFFD32F2F).withValues(alpha: 0.4),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text(
+                'Novo Produto',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          _buildSearchBar(context),
+          _buildSearchAndSortBar(context),
           _buildFilterChips(context),
-          _buildSortDropdown(context),
           Expanded(
             child: StreamBuilder<List<Product>>(
               stream: _productService.getProducts(
                 category: categoryFilter,
-                onlyActive: _onlyActive,
                 searchQuery: _searchController.text.trim(),
                 sortField: _sortField,
                 sortDescending: _sortDescending,
@@ -222,23 +210,59 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 }
 
                 if (snapshot.hasError) {
+                  final error = snapshot.error.toString();
+                  final isIndexError = error.contains('index') || error.contains('Index') || error.contains('FAILED_PRECONDITION');
+                  
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Erro ao carregar produtos',
-                          style: TextStyle(color: textColor, fontSize: 18),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          style: TextStyle(color: hintColor, fontSize: 12),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Erro ao carregar produtos',
+                            style: TextStyle(color: textColor, fontSize: 18),
+                          ),
+                          const SizedBox(height: 12),
+                          if (isIndexError) ...[
+                            Text(
+                              'Índice do Firestore necessário.',
+                              style: TextStyle(color: hintColor, fontSize: 14, fontWeight: FontWeight.w500),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Acesse o link no console do Firebase para criar o índice automaticamente:',
+                              style: TextStyle(color: hintColor, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            SelectableText(
+                              error,
+                              style: TextStyle(color: Colors.blue.shade300, fontSize: 11, fontFamily: 'monospace'),
+                              textAlign: TextAlign.center,
+                            ),
+                          ] else ...[
+                            Text(
+                              error,
+                              style: TextStyle(color: hintColor, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => setState(() {}),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Tentar novamente'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD32F2F),
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -260,7 +284,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         product: products[index],
                         onEdit: () => _navigateToForm(product: products[index]),
                         onDelete: () => _deleteProduct(products[index]),
-                        onToggleStatus: () => _toggleProductStatus(products[index]),
                       );
                     },
                   ),
@@ -270,56 +293,73 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToForm(),
-        backgroundColor: const Color(0xFFD32F2F),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Novo Produto'),
-      ),
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
+  Widget _buildSearchAndSortBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _onSearchChanged,
-        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-        decoration: InputDecoration(
-          hintText: 'Buscar por nome, SKU ou marca...',
-          hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-          prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-          filled: true,
-          fillColor: cardColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              decoration: InputDecoration(
+                hintText: 'Buscar por nome, SKU ou marca...',
+                hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                filled: true,
+                fillColor: cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
+          const SizedBox(width: 12),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.sort, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, size: 24),
+            tooltip: 'Ordenar',
+            color: cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: _onSortChanged,
+            itemBuilder: (context) => _sortOptions.entries.map((entry) {
+              return PopupMenuItem<String>(
+                value: entry.key,
+                child: Text(
+                  entry.value,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                ),
+              );
+            }).toList(),
           ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {});
-                  },
-                )
-              : null,
-        ),
+        ],
       ),
     );
   }
@@ -328,7 +368,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      height: 56,
+      height: 50,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -351,6 +391,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ? const Color(0xFFD32F2F)
                     : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 13,
               ),
               backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
               side: BorderSide(
@@ -359,64 +400,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildSortDropdown(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        children: [
-          Icon(Icons.sort, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: DropdownButtonFormField<String>(
-              value: _sortDescending ? '${_sortField}_desc' : _sortField,
-              items: _sortOptions.entries.map((entry) {
-                return DropdownMenuItem(
-                  value: entry.key,
-                  child: Text(
-                    entry.value,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                  ),
-                );
-              }).toList(),
-              onChanged: _onSortChanged,
-              dropdownColor: cardColor,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-                ),
-                filled: true,
-                fillColor: cardColor,
-              ),
-              icon: Icon(Icons.keyboard_arrow_down, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -480,13 +468,11 @@ class _ProductListCard extends StatelessWidget {
   final Product product;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onToggleStatus;
 
   const _ProductListCard({
     required this.product,
     required this.onEdit,
     required this.onDelete,
-    required this.onToggleStatus,
   });
 
   @override
@@ -542,7 +528,9 @@ class _ProductListCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: product.ativo ? Colors.green.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                              color: product.ativo
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : Colors.red.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -579,35 +567,6 @@ class _ProductListCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoChip(
-                    icon: Icons.attach_money,
-                    label: product.formattedPrice,
-                    color: const Color(0xFFD32F2F),
-                    isDark: isDark,
-                  ),
-                ),
-                Expanded(
-                  child: _InfoChip(
-                    icon: Icons.inventory,
-                    label: product.stockStatus,
-                    color: product.stockColor,
-                    isDark: isDark,
-                  ),
-                ),
-                Expanded(
-                  child: _InfoChip(
-                    icon: Icons.category,
-                    label: product.categoria,
-                    color: Colors.blue,
-                    isDark: isDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             if (product.descricao.isNotEmpty) ...[
               Text(
                 product.descricao,
@@ -620,21 +579,15 @@ class _ProductListCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
             ],
+            _buildInfoRow('Categoria', product.categoria, Colors.blue, isDark),
+            const SizedBox(height: 6),
+            _buildInfoRow('Estoque', product.stockStatus, product.stockColor, isDark),
+            const SizedBox(height: 6),
+            _buildInfoRow('Valor', product.formattedPrice, const Color(0xFFD32F2F), isDark),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  icon: Icon(
-                    product.ativo ? Icons.visibility_off : Icons.visibility,
-                    color: product.ativo ? Colors.orange : Colors.green,
-                    size: 20,
-                  ),
-                  onPressed: onToggleStatus,
-                  tooltip: product.ativo ? 'Desativar' : 'Ativar',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
                   onPressed: onEdit,
@@ -657,49 +610,30 @@ class _ProductListCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isDark;
-
-  const _InfoChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
+  Widget _buildInfoRow(String label, String value, Color color, bool isDark) {
+    return Row(
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
