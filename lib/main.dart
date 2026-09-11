@@ -26,6 +26,7 @@ class AppAutoCenter extends StatelessWidget {
           seedColor: const Color(0xFFD32F2F),
           brightness: Brightness.dark,
         ),
+        splashFactory: NoSplash.splashFactory,
         scaffoldBackgroundColor: const Color(0xFF121212),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF1A1A1A),

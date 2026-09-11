@@ -34,15 +34,24 @@ class ProductService {
     String? searchQuery,
     String sortField = 'createdAt',
     bool sortDescending = true,
+    bool onlyActive = true,
+    bool onlyInactive = false,
   }) {
     Query<Map<String, dynamic>> query = _productsRef;
 
     // Always order by createdAt to avoid composite index requirements
-    // Other filters (category, search) applied in-memory
+    // Other filters (category, search, active status) applied in-memory
     query = query.orderBy('createdAt', descending: true);
 
     return query.snapshots().map((snapshot) {
       var products = snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+
+      // In-memory filter by active status
+      if (onlyActive) {
+        products = products.where((p) => p.ativo).toList();
+      } else if (onlyInactive) {
+        products = products.where((p) => !p.ativo).toList();
+      }
 
       // In-memory filter by category
       if (category != null && category.isNotEmpty) {
