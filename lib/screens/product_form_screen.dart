@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
+import '../theme/app_theme.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -93,7 +94,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           content: Text(
             _isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado com sucesso!',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -104,7 +105,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Preço ou estoque inválido. Verifique os valores.'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -113,7 +114,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -135,7 +136,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('SKU "$sku" já está em uso'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
           ),
@@ -146,28 +147,19 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.grey.shade50,
+      backgroundColor: AppColors.surfaceDeep,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Produto' : 'Novo Produto'),
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        foregroundColor: textColor,
-        elevation: 0,
+        title: Text(_isEditing ? 'Editar Produto' : 'Novo Produto', style: AppTextStyles.headlineSmall),
       ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSectionTitle('Informações Básicas', isDark),
-
+              _buildSectionTitle('Informações Básicas'),
               _buildTextField(
                 controller: _nomeController,
                 label: 'Nome do Produto *',
@@ -183,9 +175,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   return null;
                 },
               ),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: AppSpacing.md),
               _buildDropdownField<ProductCategory>(
                 label: 'Categoria *',
                 hint: 'Selecione a categoria',
@@ -196,9 +186,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     value: cat,
                     child: Row(
                       children: [
-                        Icon(cat.icon, size: 20, color: const Color(0xFFD32F2F)),
-                        const SizedBox(width: 8),
-                        Text(cat.label),
+                        Icon(cat.icon, size: 20, color: AppColors.accentPrimary),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(cat.label, style: AppTextStyles.bodyMedium),
                       ],
                     ),
                   );
@@ -208,9 +198,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 },
                 validator: (value) => value == null ? 'Selecione uma categoria' : null,
               ),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: AppSpacing.md),
               _buildTextField(
                 controller: _marcaController,
                 label: 'Marca *',
@@ -223,9 +211,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   return null;
                 },
               ),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: AppSpacing.md),
               _buildTextField(
                 controller: _skuController,
                 label: 'SKU / Código *',
@@ -243,10 +229,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   return null;
                 },
               ),
-
-              const SizedBox(height: 24),
-              _buildSectionTitle('Preço e Estoque', isDark),
-
+              const SizedBox(height: AppSpacing.xl),
+              _buildSectionTitle('Preço e Estoque'),
               Row(
                 children: [
                   Expanded(
@@ -272,7 +256,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: _buildTextField(
                       controller: _estoqueController,
@@ -297,10 +281,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-              _buildSectionTitle('Descrição', isDark),
-
+              const SizedBox(height: AppSpacing.xl),
+              _buildSectionTitle('Descrição'),
               _buildTextField(
                 controller: _descricaoController,
                 label: 'Descrição',
@@ -309,63 +291,47 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 maxLines: 3,
                 validator: (value) => null,
               ),
-
-              const SizedBox(height: 24),
-              _buildSectionTitle('Status', isDark),
-
-              Card(
-                color: cardColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: AppSpacing.xl),
+              _buildSectionTitle('Status'),
+              Container(
+                decoration: AppDecorations.card,
                 child: SwitchListTile(
                   secondary: Icon(
                     _ativo ? Icons.check_circle : Icons.cancel,
-                    color: _ativo ? Colors.green : Colors.red,
+                    color: _ativo ? AppColors.success : AppColors.error,
                   ),
                   title: Text(
                     _ativo ? 'Produto Ativo' : 'Produto Inativo',
-                    style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     _ativo
                         ? 'Visível nas listagens e disponível para venda'
                         : 'Oculto das listagens, não disponível para venda',
-                    style: TextStyle(color: hintColor, fontSize: 12),
+                    style: AppTextStyles.bodySmall,
                   ),
                   value: _ativo,
-                  activeColor: const Color(0xFFD32F2F),
+                  activeColor: AppColors.accentPrimary,
                   onChanged: (value) => setState(() => _ativo = value),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                 ),
               ),
-
-              const SizedBox(height: 32),
-
+              const SizedBox(height: AppSpacing.xxl),
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveProduct,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD32F2F),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 4,
-                  ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: AppColors.textOnAccent,
                             strokeWidth: 2.5,
                           ),
                         )
                       : Text(
                           _isEditing ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR PRODUTO',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                 ),
               ),
@@ -376,16 +342,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, bool isDark) {
+  Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Text(
         title,
-        style: TextStyle(
-          color: isDark ? Colors.white : Colors.black87,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
+        style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 0.5),
       ),
     );
   }
@@ -402,9 +364,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     String? Function(String?)? validator,
     void Function(String)? onChanged,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -413,37 +372,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       textCapitalization: textCapitalization,
       validator: validator,
       onChanged: onChanged,
-      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+      style: AppTextStyles.bodyLarge,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-        hintStyle: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade400),
-        prefixIcon: Icon(icon, color: const Color(0xFFD32F2F)),
-        filled: true,
-        fillColor: cardColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
+        prefixIcon: Icon(icon, color: AppColors.accentPrimary),
       ),
     );
   }
@@ -457,41 +390,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     required void Function(T?) onChanged,
     String? Function(T?)? validator,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
     return DropdownButtonFormField<T>(
       value: value,
       items: items,
       onChanged: onChanged,
       validator: validator,
-      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-      dropdownColor: cardColor,
+      style: AppTextStyles.bodyLarge,
+      dropdownColor: AppColors.surfaceElevated,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: const Color(0xFFD32F2F)),
-        filled: true,
-        fillColor: cardColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
+        prefixIcon: Icon(icon, color: AppColors.accentPrimary),
       ),
     );
   }

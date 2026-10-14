@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
 import '../models/user_model.dart';
+import '../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -52,16 +53,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    print('[ProfileScreen] Iniciando salvamento...');
     setState(() => _isLoading = true);
 
     try {
-      print('[ProfileScreen] Chamando updateUserProfile...');
       await _userService.updateUserProfile(
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
       );
-      print('[ProfileScreen] updateUserProfile concluído!');
 
       if (!mounted) return;
 
@@ -77,22 +75,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Perfil atualizado com sucesso!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
-      print('[ProfileScreen] ERRO: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro ao atualizar: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
-      print('[ProfileScreen] Finally - resetando loading');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -116,73 +112,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.surfaceDeep,
       appBar: AppBar(
-        title: const Text('Meu Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1A1A1A),
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text('Meu Perfil', style: AppTextStyles.headlineSmall),
       ),
-      body: _userModel == null && !_isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFD32F2F)))
+      body: _userModel == null
+          ? const Center(child: CircularProgressIndicator(strokeWidth: 2.5))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: const Color(0xFFD32F2F).withValues(alpha: 0.2),
+                    backgroundColor: AppColors.accentPrimary.withValues(alpha: 0.15),
                     child: Text(
-                      _userModel?.name.isNotEmpty == true
+                      _userModel!.name.isNotEmpty
                           ? _userModel!.name[0].toUpperCase()
                           : currentUser?.email?[0].toUpperCase() ?? 'U',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD32F2F),
+                      style: AppTextStyles.displayMedium.copyWith(
+                        color: AppColors.accentPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
-                    _userModel?.name ?? 'Carregando...',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    _userModel!.name,
+                    style: AppTextStyles.headlineLarge.copyWith(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     currentUser?.email ?? '',
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    style: AppTextStyles.bodyMedium,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
 
-                  Card(
-                    color: const Color(0xFF1E1E1E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  Container(
+                    decoration: AppDecorations.card,
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text(
+                            Text(
                               'Informações Pessoais',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 0.5),
                             ),
-                            const SizedBox(height: 20),
-
+                            const SizedBox(height: AppSpacing.lg),
                             _buildEditableField(
-                              label: ' ',
+                              label: '',
                               icon: Icons.person_outline,
                               controller: _nameController,
                               isEditing: _isEditingName,
@@ -197,8 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
-
+                            const SizedBox(height: AppSpacing.md),
                             _buildEditableField(
                               label: '',
                               icon: Icons.phone_outlined,
@@ -221,52 +202,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
-
+                            const SizedBox(height: AppSpacing.md),
                             TextFormField(
                               initialValue: currentUser?.email ?? '',
                               enabled: false,
-                              style: TextStyle(color: Colors.grey.shade400),
-                              decoration: _buildInputDecoration(
-                                label: '',
-                                icon: Icons.email_outlined,
+                              style: AppTextStyles.bodyMedium,
+                              decoration: InputDecoration(
+                                labelText: '',
+                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.accentPrimary),
                                 suffixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.textDim,
                                   size: 20,
                                 ),
                               ),
                             ),
-
                             if (_isEditing) ...[
-                              const SizedBox(height: 24),
+                              const SizedBox(height: AppSpacing.xl),
                               SizedBox(
                                 height: 52,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _saveProfile,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFD32F2F),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
                                   child: _isLoading
                                       ? const SizedBox(
                                           width: 22,
                                           height: 22,
                                           child: CircularProgressIndicator(
-                                            color: Colors.white,
+                                            color: AppColors.textOnAccent,
                                             strokeWidth: 2.5,
                                           ),
                                         )
-                                      : const Text(
-                                          'SALVAR ALTERAÇÕES',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                      : const Text('SALVAR ALTERAÇÕES'),
                                 ),
                               ),
                             ],
@@ -276,25 +242,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.lg),
 
-                  Card(
-                    color: const Color(0xFF1E1E1E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  Container(
+                    decoration: AppDecorations.card,
                     child: ListTile(
-                      leading: const Icon(Icons.logout, color: Color(0xFFD32F2F)),
-                      title: const Text(
+                      leading: Icon(Icons.logout, color: AppColors.error),
+                      title: Text(
                         'Sair da conta',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        style: AppTextStyles.titleMedium.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       onTap: _signOut,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
                     'AZ Auto Center',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: AppTextStyles.caption,
                   ),
                 ],
               ),
@@ -311,81 +282,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
-    Widget? suffixIcon,
   }) {
     return TextFormField(
       controller: controller,
       readOnly: !isEditing,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      style: TextStyle(
-        color: isEditing ? Colors.white : Colors.grey.shade300,
+      style: AppTextStyles.bodyLarge.copyWith(
+        color: isEditing ? AppColors.textPrimary : AppColors.textMuted,
       ),
-      decoration: _buildInputDecoration(
-        label: label,
-        icon: icon,
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (suffixIcon != null) suffixIcon,
-            SizedBox(
-              width: 48,
-              height: 48,
-              child: IconButton(
-                icon: Icon(
-                  isEditing ? Icons.check : Icons.edit,
-                  color: isEditing ? Colors.green : const Color(0xFFD32F2F),
-                  size: 22,
-                ),
-                onPressed: onToggleEdit,
-                tooltip: isEditing ? 'Concluir' : 'Editar',
-                padding: EdgeInsets.zero,
-              ),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: AppColors.accentPrimary),
+        suffixIcon: SizedBox(
+          width: 48,
+          height: 48,
+          child: IconButton(
+            icon: Icon(
+              isEditing ? Icons.check : Icons.edit,
+              color: isEditing ? AppColors.success : AppColors.accentPrimary,
+              size: 22,
             ),
-          ],
+            onPressed: onToggleEdit,
+            tooltip: isEditing ? 'Concluir' : 'Editar',
+            padding: EdgeInsets.zero,
+          ),
         ),
       ),
       validator: validator,
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: Icon(icon, color: const Color(0xFFD32F2F)),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: const Color(0xFF121212),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F)),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-      ),
-      disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
     );
   }
 }

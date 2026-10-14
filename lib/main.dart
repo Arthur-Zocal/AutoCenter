@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/login.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,34 +20,8 @@ class AppAutoCenter extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'AZ Auto Center',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD32F2F),
-          brightness: Brightness.dark,
-        ),
-        splashFactory: NoSplash.splashFactory,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1A1A1A),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFD32F2F),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 4,
-            shadowColor: const Color(0xFFD32F2F).withValues(alpha: 0.4),
-          ),
-        ),
-      ),
-      home: SplashScreen(),
+      theme: AppTheme.dark,
+      home: const SplashScreen(),
     );
   }
 }
@@ -76,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: AppColors.surfaceDeep,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -86,10 +61,13 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 280,
               fit: BoxFit.contain,
             ),
-            const SizedBox(height: 50),
-            const CircularProgressIndicator(
-              color: Color(0xFFD32F2F),
-              strokeWidth: 3,
+            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+              ),
             ),
           ],
         ),

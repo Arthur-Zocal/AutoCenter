@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
 import 'product_form_screen.dart';
+import '../theme/app_theme.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String? initialCategory;
@@ -71,30 +72,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Future<void> _deleteProduct(Product product) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Confirmar Exclusão', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Excluir "${product.nome}"?\n\nEsta ação não pode ser desfeita.',
-          style: TextStyle(color: Colors.grey.shade300),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      builder: (context) => _DeleteConfirmDialog(product: product),
     );
 
     if (confirmed == true) {
@@ -102,9 +80,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
         await _productService.deleteProduct(product.id);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Produto excluído com sucesso'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Produto excluído com sucesso'),
+            backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -113,7 +91,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao excluir: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -133,7 +111,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(product == null ? 'Produto cadastrado!' : 'Produto atualizado!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -142,33 +120,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : Colors.grey.shade50;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final hintColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-
     final categoryFilter = _selectedCategory.isEmpty ? null : _selectedCategory;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: AppColors.surfaceDeep,
       appBar: AppBar(
-        title: const Text('Produtos', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-        foregroundColor: textColor,
-        elevation: 0,
+        title: Text('Produtos', style: AppTextStyles.headlineSmall),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: const Icon(Icons.add, size: 28),
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: IconButton.filled(
+              icon: const Icon(Icons.add, size: 24),
               onPressed: () => _navigateToForm(),
               tooltip: 'Novo Produto',
               style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.accentPrimary,
+                foregroundColor: AppColors.textOnAccent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
+                padding: const EdgeInsets.all(AppSpacing.sm),
               ),
             ),
           ),
@@ -176,8 +147,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       body: Column(
         children: [
-          _buildSearchAndSortBar(context),
-          _buildFilterChips(context),
+          _buildSearchAndSortBar(),
+          _buildFilterChips(),
           Expanded(
             child: StreamBuilder<List<Product>>(
               stream: _productService.getProducts(
@@ -191,79 +162,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFD32F2F)),
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
                   );
                 }
 
                 if (snapshot.hasError) {
                   final error = snapshot.error.toString();
                   final isIndexError = error.contains('index') || error.contains('Index') || error.contains('FAILED_PRECONDITION');
-                  
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Erro ao carregar produtos',
-                            style: TextStyle(color: textColor, fontSize: 18),
-                          ),
-                          const SizedBox(height: 12),
-                          if (isIndexError) ...[
-                            Text(
-                              'Índice do Firestore necessário.',
-                              style: TextStyle(color: hintColor, fontSize: 14, fontWeight: FontWeight.w500),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Acesse o link no console do Firebase para criar o índice automaticamente:',
-                              style: TextStyle(color: hintColor, fontSize: 12),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-                            SelectableText(
-                              error,
-                              style: TextStyle(color: Colors.blue.shade300, fontSize: 11, fontFamily: 'monospace'),
-                              textAlign: TextAlign.center,
-                            ),
-                          ] else ...[
-                            Text(
-                              error,
-                              style: TextStyle(color: hintColor, fontSize: 12),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => setState(() {}),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Tentar novamente'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD32F2F),
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+
+                  return _buildErrorState(error, isIndexError);
                 }
 
                 final products = snapshot.data ?? [];
 
                 if (products.isEmpty) {
-                  return _buildEmptyState(context);
+                  return _buildEmptyState();
                 }
 
                 return RefreshIndicator(
                   onRefresh: () async => setState(() {}),
-                  color: const Color(0xFFD32F2F),
+                  color: AppColors.accentPrimary,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       return _ProductListCard(
@@ -282,77 +202,62 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _buildSearchAndSortBar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
+  Widget _buildSearchAndSortBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
-              style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              style: AppTextStyles.bodyLarge,
               decoration: InputDecoration(
                 hintText: 'Buscar por nome, SKU ou marca...',
-                hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-                prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-                filled: true,
-                fillColor: cardColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-                ),
+                prefixIcon: const Icon(Icons.search, size: 22),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear, color: isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                        icon: const Icon(Icons.clear, size: 20),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {});
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           IconButton(
             icon: Icon(
               Icons.tune,
               color: _statusFilter == _StatusFilter.ativos
-                  ? const Color(0xFFD32F2F)
-                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                  ? AppColors.accentPrimary
+                  : AppColors.textDim,
               size: 24,
             ),
             tooltip: 'Filtrar e ordenar',
-            onPressed: () => _showFilterBottomSheet(context, isDark, cardColor),
+            onPressed: () => _showFilterBottomSheet(),
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surfaceOverlay,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.sm),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChips(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildFilterChips() {
     return SizedBox(
-      height: 50,
+      height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final category = _categories[index];
@@ -360,29 +265,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
               _selectedCategory == category;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: FilterChip(
               label: Text(category),
               selected: isSelected,
               onSelected: (_) => _onCategoryChanged(category),
-              selectedColor: const Color(0xFFD32F2F).withValues(alpha: 0.2),
-              checkmarkColor: const Color(0xFFD32F2F),
-              labelStyle: TextStyle(
-                color: isSelected
-                    ? const Color(0xFFD32F2F)
-                    : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 13,
+              selectedColor: AppColors.accentPrimary.withValues(alpha: 0.15),
+              checkmarkColor: AppColors.accentPrimary,
+              labelStyle: AppTextStyles.labelMedium.copyWith(
+                color: isSelected ? AppColors.accentPrimary : AppColors.textMuted,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
-              backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              backgroundColor: AppColors.surfaceOverlay,
               side: BorderSide(
                 color: isSelected
-                    ? const Color(0xFFD32F2F)
-                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                    ? AppColors.accentPrimary
+                    : AppColors.borderSubtle,
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             ),
           );
         },
@@ -390,38 +293,138 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  void _showFilterBottomSheet(BuildContext context, bool isDark, Color cardColor) {
+  Widget _buildErrorState(String error, bool isIndexError) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Erro ao carregar produtos',
+              style: AppTextStyles.headlineMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (isIndexError) ...[
+              Text(
+                'Índice do Firestore necessário.',
+                style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Acesse o link no console do Firebase para criar o índice automaticamente:',
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              SelectableText(
+                error,
+                style: AppTextStyles.monoSmall.copyWith(color: AppColors.accentGlow),
+                textAlign: TextAlign.center,
+              ),
+            ] else ...[
+              Text(
+                error,
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {}),
+              icon: const Icon(Icons.refresh, size: 20),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 80,
+              color: AppColors.textDim,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Nenhum produto encontrado',
+              style: AppTextStyles.headlineSmall.copyWith(color: AppColors.textMuted),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (_searchController.text.isNotEmpty || _selectedCategory.isNotEmpty)
+              Text(
+                'Tente ajustar os filtros ou a busca',
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              )
+            else
+              Text(
+                'Cadastre o primeiro produto da loja',
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton.icon(
+              onPressed: () => _navigateToForm(),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text('Cadastrar Produto'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.none),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFilterBottomSheet() {
     _StatusFilter tempStatusFilter = _statusFilter;
     String tempSortField = _sortField;
     bool tempSortDescending = _sortDescending;
 
-    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
 
-    // Para tablet/desktop, usar modal centralizado; para mobile, bottom sheet
     if (isTablet) {
-      _showFilterDialog(context, isDark, cardColor);
+      _showFilterDialog(
+        tempStatusFilter: tempStatusFilter,
+        tempSortField: tempSortField,
+        tempSortDescending: tempSortDescending,
+      );
       return;
     }
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: cardColor,
+      backgroundColor: AppColors.surfaceElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       isScrollControlled: true,
       enableDrag: true,
       constraints: BoxConstraints(
-        maxHeight: screenHeight * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      builder: (context) {
-        return Theme(
-          data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Padding(
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
+        child: StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
@@ -429,414 +432,176 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  // Handle bar melhorado
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      margin: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 2,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          'FILTRAR E ORDENAR',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: Icon(Icons.close, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  // Seção Filtros
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-                    child: Text(
-                      'FILTROS',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  // Opção Ativos
-                  RadioListTile<_StatusFilter>(
-                    value: _StatusFilter.ativos,
-                    groupValue: tempStatusFilter,
-                    onChanged: (value) => setModalState(() => tempStatusFilter = value!),
-                    dense: true,
-                    title: Text(
-                      'Ativos',
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                    ),
-                    secondary: Icon(
-                      Icons.check_circle,
-                      size: 22,
-                      color: tempStatusFilter == _StatusFilter.ativos
-                          ? const Color(0xFFD32F2F)
-                          : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-                    ),
-                    activeColor: const Color(0xFFD32F2F),
-                    tileColor: tempStatusFilter == _StatusFilter.ativos
-                        ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  // Opção Inativos
-                  RadioListTile<_StatusFilter>(
-                    value: _StatusFilter.inativos,
-                    groupValue: tempStatusFilter,
-                    onChanged: (value) => setModalState(() => tempStatusFilter = value!),
-                    dense: true,
-                    title: Text(
-                      'Inativos',
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                    ),
-                    secondary: Icon(
-                      Icons.cancel,
-                      size: 22,
-                      color: tempStatusFilter == _StatusFilter.inativos
-                          ? const Color(0xFFD32F2F)
-                          : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
-                    ),
-                    activeColor: const Color(0xFFD32F2F),
-                    tileColor: tempStatusFilter == _StatusFilter.inativos
-                        ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const Divider(height: 16),
-                  // Seção Ordenação
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Text(
-                      'ORDENAR',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  // Opções de ordenação
-                  ..._sortOptions.entries.map((entry) {
-                    final isSelected = tempSortDescending
-                        ? entry.key == '${tempSortField}_desc'
-                        : entry.key == tempSortField;
-                    return RadioListTile<String>(
-                      value: entry.key,
-                      groupValue: tempSortDescending ? '${tempSortField}_desc' : tempSortField,
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setModalState(() {
-                          if (value.endsWith('_desc')) {
-                            tempSortField = value.replaceAll('_desc', '');
-                            tempSortDescending = true;
-                          } else {
-                            tempSortField = value;
-                            tempSortDescending = false;
-                          }
+                    _buildBottomSheetHandle(),
+                    _buildFilterModalContent(
+                      setModalState: setModalState,
+                      tempStatusFilter: tempStatusFilter,
+                      tempSortField: tempSortField,
+                      tempSortDescending: tempSortDescending,
+                      onStatusChanged: (v) => setModalState(() => tempStatusFilter = v),
+                      onSortChanged: (v) => setModalState(() {
+                        if (v.endsWith('_desc')) {
+                          tempSortField = v.replaceAll('_desc', '');
+                          tempSortDescending = true;
+                        } else {
+                          tempSortField = v;
+                          tempSortDescending = false;
+                        }
+                      }),
+                      onApply: () {
+                        setState(() {
+                          _statusFilter = tempStatusFilter;
+                          _sortField = tempSortField;
+                          _sortDescending = tempSortDescending;
                         });
+                        Navigator.pop(context);
                       },
-                      title: Text(
-                        entry.value,
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15),
-                      ),
-                      secondary: isSelected
-                          ? Icon(Icons.check, size: 20, color: const Color(0xFFD32F2F))
-                          : null,
-                      activeColor: const Color(0xFFD32F2F),
-                      tileColor: isSelected
-                          ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    );
-                  }),
-const SizedBox(height: 16),
-                  // Botões de ação
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isSmallScreen = constraints.maxWidth < 360;
-                        return Row(
-                          children: [
-                            // Botão Limpar (vassoura)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: Icon(Icons.cleaning_services, size: isSmallScreen ? 18 : 20),
-                                label: Text('LIMPAR', style: TextStyle(fontSize: isSmallScreen ? 13 : 14)),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                                  side: BorderSide(
-                                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                                  ),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 12),
-                                ),
-                                onPressed: () {
-                                  setModalState(() {
-                                    tempStatusFilter = _StatusFilter.ativos;
-                                    tempSortField = 'createdAt';
-                                    tempSortDescending = true;
-                                  });
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            // Botão Aplicar (lupa)
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                icon: Icon(Icons.search, size: isSmallScreen ? 18 : 20),
-                                label: Text('APLICAR', style: TextStyle(fontSize: isSmallScreen ? 13 : 14)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD32F2F),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 12),
-                                  elevation: 1,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _statusFilter = tempStatusFilter;
-                                    _sortField = tempSortField;
-                                    _sortDescending = tempSortDescending;
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                      onClear: () => setModalState(() {
+                        tempStatusFilter = _StatusFilter.ativos;
+                        tempSortField = 'createdAt';
+                        tempSortDescending = true;
+                      }),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
-    ); // Theme
-}, // showModalBottomSheet builder
-); // showModalBottomSheet
-}
+    );
+  }
 
-void _showFilterDialog(BuildContext context, bool isDark, Color cardColor) {
-  _StatusFilter tempStatusFilter = _statusFilter;
-  String tempSortField = _sortField;
-  bool tempSortDescending = _sortDescending;
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return Theme(
+  void _showFilterDialog({
+    required _StatusFilter tempStatusFilter,
+    required String tempSortField,
+    required bool tempSortDescending,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => Theme(
         data: Theme.of(context).copyWith(splashFactory: NoSplash.splashFactory),
         child: StatefulBuilder(
           builder: (context, setModalState) {
+            _StatusFilter localStatusFilter = tempStatusFilter;
+            String localSortField = tempSortField;
+            bool localSortDescending = tempSortDescending;
+
             return AlertDialog(
-              backgroundColor: cardColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: AppColors.surfaceElevated,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                side: AppBorder.thin,
+              ),
               title: Text(
                 'FILTRAR E ORDENAR',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
+                style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 0.5),
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Seção Filtros
-                    Text(
-                      'FILTROS',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Opção Ativos
+                    _buildFilterSectionTitle('FILTROS'),
                     RadioListTile<_StatusFilter>(
                       value: _StatusFilter.ativos,
-                      groupValue: tempStatusFilter,
-                      onChanged: (value) => setModalState(() => tempStatusFilter = value!),
+                      groupValue: localStatusFilter,
+                      onChanged: (v) => setModalState(() => localStatusFilter = v!),
                       dense: true,
-                      title: Text(
-                        'Ativos',
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                      ),
+                      title: Text('Ativos', style: AppTextStyles.bodyMedium),
                       secondary: Icon(
                         Icons.check_circle,
                         size: 22,
-                        color: tempStatusFilter == _StatusFilter.ativos
-                            ? const Color(0xFFD32F2F)
-                            : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                        color: localStatusFilter == _StatusFilter.ativos
+                            ? AppColors.accentPrimary
+                            : AppColors.textDim,
                       ),
-                      activeColor: const Color(0xFFD32F2F),
-                      tileColor: tempStatusFilter == _StatusFilter.ativos
-                          ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
+                      activeColor: AppColors.accentPrimary,
+                      tileColor: localStatusFilter == _StatusFilter.ativos
+                          ? AppColors.accentPrimary.withValues(alpha: 0.1)
                           : Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                     ),
-                    // Opção Inativos
                     RadioListTile<_StatusFilter>(
                       value: _StatusFilter.inativos,
-                      groupValue: tempStatusFilter,
-                      onChanged: (value) => setModalState(() => tempStatusFilter = value!),
+                      groupValue: localStatusFilter,
+                      onChanged: (v) => setModalState(() => localStatusFilter = v!),
                       dense: true,
-                      title: Text(
-                        'Inativos',
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                      ),
+                      title: Text('Inativos', style: AppTextStyles.bodyMedium),
                       secondary: Icon(
                         Icons.cancel,
                         size: 22,
-                        color: tempStatusFilter == _StatusFilter.inativos
-                            ? const Color(0xFFD32F2F)
-                            : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
+                        color: localStatusFilter == _StatusFilter.inativos
+                            ? AppColors.accentPrimary
+                            : AppColors.textDim,
                       ),
-                      activeColor: const Color(0xFFD32F2F),
-                      tileColor: tempStatusFilter == _StatusFilter.inativos
-                          ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
+                      activeColor: AppColors.accentPrimary,
+                      tileColor: localStatusFilter == _StatusFilter.inativos
+                          ? AppColors.accentPrimary.withValues(alpha: 0.1)
                           : Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                     ),
-                    const Divider(height: 16),
-                    // Seção Ordenação
-                    Text(
-                      'ORDENAR',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Opções de ordenação
+                    const Divider(height: AppSpacing.xl),
+                    _buildFilterSectionTitle('ORDENAR'),
                     ..._sortOptions.entries.map((entry) {
-                      final isSelected = tempSortDescending
-                          ? entry.key == '${tempSortField}_desc'
-                          : entry.key == tempSortField;
+                      final isSelected = localSortDescending
+                          ? entry.key == '${localSortField}_desc'
+                          : entry.key == localSortField;
                       return RadioListTile<String>(
                         value: entry.key,
-                        groupValue: tempSortDescending ? '${tempSortField}_desc' : tempSortField,
+                        groupValue: localSortDescending ? '${localSortField}_desc' : localSortField,
                         onChanged: (value) {
                           if (value == null) return;
                           setModalState(() {
                             if (value.endsWith('_desc')) {
-                              tempSortField = value.replaceAll('_desc', '');
-                              tempSortDescending = true;
+                              localSortField = value.replaceAll('_desc', '');
+                              localSortDescending = true;
                             } else {
-                              tempSortField = value;
-                              tempSortDescending = false;
+                              localSortField = value;
+                              localSortDescending = false;
                             }
                           });
                         },
                         dense: true,
-                        title: Text(
-                          entry.value,
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                        ),
+                        title: Text(entry.value, style: AppTextStyles.bodyMedium),
                         secondary: isSelected
-                            ? Icon(Icons.check, size: 18, color: const Color(0xFFD32F2F))
+                            ? const Icon(Icons.check, size: 18, color: AppColors.accentPrimary)
                             : null,
-                        activeColor: const Color(0xFFD32F2F),
+                        activeColor: AppColors.accentPrimary,
                         tileColor: isSelected
-                            ? const Color(0xFFD32F2F).withValues(alpha: 0.1)
+                            ? AppColors.accentPrimary.withValues(alpha: 0.1)
                             : Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                       );
                     }),
-                    const SizedBox(height: 16),
-                    // Botões de ação
+                    const SizedBox(height: AppSpacing.lg),
                     Row(
                       children: [
-                        // Botão Limpar (vassoura)
                         Expanded(
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.cleaning_services, size: 18),
-                            label: const Text('LIMPAR', style: TextStyle(fontSize: 13)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                              side: BorderSide(
-                                color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                              ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                            onPressed: () {
-                              setModalState(() {
-                                tempStatusFilter = _StatusFilter.ativos;
-                                tempSortField = 'createdAt';
-                                tempSortDescending = true;
-                              });
-                            },
+                            label: Text('LIMPAR', style: AppTextStyles.buttonMedium),
+                            onPressed: () => setModalState(() {
+                              localStatusFilter = _StatusFilter.ativos;
+                              localSortField = 'createdAt';
+                              localSortDescending = true;
+                            }),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        // Botão Aplicar (lupa)
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: ElevatedButton.icon(
                             icon: const Icon(Icons.search, size: 18),
-                            label: const Text('APLICAR', style: TextStyle(fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD32F2F),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              elevation: 1,
-                            ),
+                            label: Text('APLICAR', style: AppTextStyles.buttonMedium),
                             onPressed: () {
                               setState(() {
-                                _statusFilter = tempStatusFilter;
-                                _sortField = tempSortField;
-                                _sortDescending = tempSortDescending;
+                                _statusFilter = localStatusFilter;
+                                _sortField = localSortField;
+                                _sortDescending = localSortDescending;
                               });
                               Navigator.pop(context);
                             },
@@ -850,68 +615,197 @@ void _showFilterDialog(BuildContext context, bool isDark, Color cardColor) {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('CANCELAR', style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+                  child: Text('CANCELAR', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textDim)),
                 ),
               ],
             );
           },
         ),
-      );
-    },
-  );
-}
+      ),
+    );
+  }
 
-Widget _buildEmptyState(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inventory_2_outlined,
-              size: 80,
-              color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nenhum produto encontrado',
-              style: TextStyle(
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (_searchController.text.isNotEmpty || _selectedCategory.isNotEmpty)
-              Text(
-                'Tente ajustar os filtros ou a busca',
-                style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              )
-            else
-              Text(
-                'Cadastre o primeiro produto da loja',
-                style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _navigateToForm(),
-              icon: const Icon(Icons.add),
-              label: const Text('Cadastrar Produto'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+  Widget _buildBottomSheetHandle() {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        width: 40,
+        height: 4,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.borderSubtle,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
         ),
       ),
+    );
+  }
+
+  Widget _buildFilterModalContent({
+    required StateSetter setModalState,
+    required _StatusFilter tempStatusFilter,
+    required String tempSortField,
+    required bool tempSortDescending,
+    required void Function(_StatusFilter) onStatusChanged,
+    required void Function(String) onSortChanged,
+    required VoidCallback onApply,
+    required VoidCallback onClear,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(
+                'FILTRAR E ORDENAR',
+                style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 0.5),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(Icons.close, color: AppColors.textDim),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const Divider(height: 1),
+          _buildFilterSectionTitle('FILTROS'),
+          RadioListTile<_StatusFilter>(
+            value: _StatusFilter.ativos,
+            groupValue: tempStatusFilter,
+            onChanged: (v) => setModalState(() => onStatusChanged(v!)),
+            dense: true,
+            title: Text('Ativos', style: AppTextStyles.bodyMedium),
+            secondary: Icon(
+              Icons.check_circle,
+              size: 22,
+              color: tempStatusFilter == _StatusFilter.ativos
+                  ? AppColors.accentPrimary
+                  : AppColors.textDim,
+            ),
+            activeColor: AppColors.accentPrimary,
+            tileColor: tempStatusFilter == _StatusFilter.ativos
+                ? AppColors.accentPrimary.withValues(alpha: 0.1)
+                : Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          ),
+          RadioListTile<_StatusFilter>(
+            value: _StatusFilter.inativos,
+            groupValue: tempStatusFilter,
+            onChanged: (v) => setModalState(() => onStatusChanged(v!)),
+            dense: true,
+            title: Text('Inativos', style: AppTextStyles.bodyMedium),
+            secondary: Icon(
+              Icons.cancel,
+              size: 22,
+              color: tempStatusFilter == _StatusFilter.inativos
+                  ? AppColors.accentPrimary
+                  : AppColors.textDim,
+            ),
+            activeColor: AppColors.accentPrimary,
+            tileColor: tempStatusFilter == _StatusFilter.inativos
+                ? AppColors.accentPrimary.withValues(alpha: 0.1)
+                : Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          ),
+          const Divider(height: AppSpacing.xl),
+          _buildFilterSectionTitle('ORDENAR'),
+          ..._sortOptions.entries.map((entry) {
+            final isSelected = tempSortDescending
+                ? entry.key == '${tempSortField}_desc'
+                : entry.key == tempSortField;
+            return RadioListTile<String>(
+              value: entry.key,
+              groupValue: tempSortDescending ? '${tempSortField}_desc' : tempSortField,
+              onChanged: (value) {
+                if (value == null) return;
+                setModalState(() => onSortChanged(value));
+              },
+              dense: true,
+              title: Text(entry.value, style: AppTextStyles.bodyMedium),
+              secondary: isSelected
+                  ? const Icon(Icons.check, size: 18, color: AppColors.accentPrimary)
+                  : null,
+              activeColor: AppColors.accentPrimary,
+              tileColor: isSelected
+                  ? AppColors.accentPrimary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            );
+          }),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.cleaning_services, size: 18),
+                  label: Text('LIMPAR', style: AppTextStyles.buttonMedium),
+                  onPressed: onClear,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.search, size: 18),
+                  label: Text('APLICAR', style: AppTextStyles.buttonMedium),
+                  onPressed: onApply,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text(
+        title,
+        style: AppTextStyles.labelSmall,
+      ),
+    );
+  }
+}
+
+class _DeleteConfirmDialog extends StatelessWidget {
+  final Product product;
+
+  const _DeleteConfirmDialog({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: AppBorder.thin,
+      ),
+      title: Text('Confirmar Exclusão', style: AppTextStyles.headlineSmall),
+      content: Text(
+        'Excluir "${product.nome}"?\n\nEsta ação não pode ser desfeita.',
+        style: AppTextStyles.bodyMedium,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text('Cancelar', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textDim)),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.error,
+            foregroundColor: AppColors.textOnAccent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.none)),
+          ),
+          child: Text('EXCLUIR', style: AppTextStyles.buttonMedium),
+        ),
+      ],
     );
   }
 }
@@ -929,176 +823,154 @@ class _ProductListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
-    return Card(
-      color: cardColor,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: AppDecorations.card,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD32F2F).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    product.categoryEnum.icon,
-                    color: const Color(0xFFD32F2F),
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.2), width: 1),
+                      ),
+                      child: Icon(
+                        product.categoryEnum.icon,
+                        color: AppColors.accentPrimary,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              product.nome,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black87,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  product.nome,
+                                  style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.w600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              if (!product.ativo)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                                  decoration: AppDecorations.badgeError,
+                                  child: Text(
+                                    'INATIVO',
+                                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.error, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              PopupMenuButton<String>(
+                                icon: Icon(Icons.more_vert, color: AppColors.textDim, size: 24),
+                                tooltip: 'Mais opções',
+                                color: AppColors.surfaceElevated,
+                                surfaceTintColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                                  side: AppBorder.thin,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    onEdit();
+                                  } else if (value == 'delete') {
+                                    onDelete();
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit, size: 20, color: AppColors.accentGlow),
+                                        const SizedBox(width: AppSpacing.md),
+                                        Text('Editar', style: AppTextStyles.bodyMedium),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete, size: 20, color: AppColors.error),
+                                        const SizedBox(width: AppSpacing.md),
+                                        Text('Excluir', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          if (!product.ativo)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            children: [
+                              Text(
+                                product.marca,
+                                style: AppTextStyles.bodySmall,
                               ),
-                              child: Text(
-                                'INATIVO',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, size: 24),
-                            tooltip: 'Mais opções',
-                            color: cardColor,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            onSelected: (value) {
-                              if (value == 'edit') {
-                                onEdit();
-                              } else if (value == 'delete') {
-                                onDelete();
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem<String>(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, size: 20, color: Colors.blue),
-                                    const SizedBox(width: 12),
-                                    const Text('Editar'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, size: 20, color: Colors.red),
-                                    const SizedBox(width: 12),
-                                    const Text('Excluir'),
-                                  ],
-                                ),
+                              const SizedBox(width: AppSpacing.md),
+                              Text(
+                                'SKU: ${product.sku}',
+                                style: AppTextStyles.monoSmall.copyWith(fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            product.marca,
-                            style: TextStyle(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'SKU: ${product.sku}',
-                            style: TextStyle(
-                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                              fontSize: 11,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+                if (product.descricao.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    product.descricao,
+                    style: AppTextStyles.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                _buildInfoRow('CATEGORIA', product.categoria, AppColors.accentGlow),
+                const SizedBox(height: AppSpacing.sm),
+                _buildInfoRow('ESTOQUE', product.stockStatus, product.stockColor == Colors.green ? AppColors.success : (product.stockColor == Colors.orange ? AppColors.warning : AppColors.error)),
+                const SizedBox(height: AppSpacing.sm),
+                _buildInfoRow('VALOR', product.formattedPrice, AppColors.accentPrimary),
               ],
             ),
-            const SizedBox(height: 12),
-            if (product.descricao.isNotEmpty) ...[
-              Text(
-                product.descricao,
-                style: TextStyle(
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  fontSize: 12,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-            ],
-            _buildInfoRow('Categoria', product.categoria, Colors.blue, isDark),
-            const SizedBox(height: 6),
-            _buildInfoRow('Estoque', product.stockStatus, product.stockColor, isDark),
-            const SizedBox(height: 6),
-            _buildInfoRow('Valor', product.formattedPrice, const Color(0xFFD32F2F), isDark),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, Color color, bool isDark) {
+  Widget _buildInfoRow(String label, String value, Color color) {
     return Row(
       children: [
         Text(
           '$label: ',
-          style: TextStyle(
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
+          style: AppTextStyles.labelMedium,
         ),
         Flexible(
           child: Text(
             value,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.monoMedium.copyWith(color: color, fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
           ),
         ),

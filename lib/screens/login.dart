@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'register.dart';
 import 'home.dart';
+import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -76,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(mensagem),
-          backgroundColor: const Color(0xFFD32F2F),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -85,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro inesperado: ${e.toString()}'),
-          backgroundColor: const Color(0xFFD32F2F),
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -115,11 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.surfaceDeep,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Form(
@@ -133,32 +134,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 160,
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       'Acesse sua conta para continuar',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.bodySmall,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xl),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       validator: _validarEmail,
-                      style: const TextStyle(color: Colors.white),
+                      style: AppTextStyles.bodyLarge,
                       decoration: _buildInputDecoration(
                         label: 'E-mail',
                         icon: Icons.email_outlined,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     TextFormField(
                       controller: _senhaController,
                       obscureText: _obscureSenha,
                       validator: _validarSenha,
-                      style: const TextStyle(color: Colors.white),
+                      style: AppTextStyles.bodyLarge,
                       decoration: _buildInputDecoration(
                         label: 'Senha',
                         icon: Icons.lock_outline,
@@ -167,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscureSenha
                                 ? Icons.visibility_off
                                 : Icons.visibility,
-                            color: Colors.grey,
+                            color: AppColors.textDim,
                           ),
                           onPressed: () {
                             setState(() => _obscureSenha = !_obscureSenha);
@@ -175,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.xl),
                     SizedBox(
                       height: 52,
                       child: ElevatedButton(
@@ -185,20 +183,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: AppColors.textOnAccent,
                                   strokeWidth: 2.5,
                                 ),
                               )
-                            : const Text(
-                                'ENTRAR',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            : const Text('ENTRAR'),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.md),
                     TextButton(
                       onPressed: _carregando
                           ? null
@@ -209,10 +201,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                      child: const Text(
+                      child: Text(
                         'Não tem conta? Cadastre-se',
-                        style: TextStyle(
-                          color: Color(0xFFD32F2F),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.accentPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -234,31 +226,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.grey),
-      prefixIcon: Icon(icon, color: const Color(0xFFD32F2F)),
+      prefixIcon: Icon(icon, color: AppColors.accentPrimary),
       suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: const Color(0xFF1E1E1E),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F)),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
-      ),
     );
   }
 }
