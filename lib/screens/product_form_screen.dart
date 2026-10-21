@@ -13,6 +13,13 @@ class ProductFormScreen extends StatefulWidget {
   State<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
+class _CategoryItem {
+  final String label;
+  final IconData icon;
+
+  const _CategoryItem({required this.label, required this.icon});
+}
+
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _productService = ProductService();
@@ -23,11 +30,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late final TextEditingController _precoController;
   late final TextEditingController _estoqueController;
   late final TextEditingController _descricaoController;
+  late final TextEditingController _imagemUrlController;
 
-  ProductCategory _selectedCategory = ProductCategory.mecanicaGeral;
+  String _selectedCategoryLabel = ProductCategory.mecanicaGeral.label;
   bool _ativo = true;
   bool _isLoading = false;
   bool _isEditing = false;
+
+  static const List<_CategoryItem> _allCategories = [
+    _CategoryItem(label: 'Mecânica Geral', icon: Icons.build),
+    _CategoryItem(label: 'Estética Automotiva', icon: Icons.clean_hands),
+    _CategoryItem(label: 'Suspensão e Freios', icon: Icons.directions_car),
+    _CategoryItem(label: 'Faróis e Lâmpadas', icon: Icons.light_mode),
+    _CategoryItem(label: 'Lubrificantes', icon: Icons.local_gas_station),
+    _CategoryItem(label: 'Baterias', icon: Icons.battery_charging_full),
+    _CategoryItem(label: 'Adesivo/Envelopamento', icon: Icons.layers),
+  ];
 
   @override
   void initState() {
@@ -42,9 +60,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
     _estoqueController = TextEditingController(text: widget.product?.estoque.toString() ?? '');
     _descricaoController = TextEditingController(text: widget.product?.descricao ?? '');
+    _imagemUrlController = TextEditingController(text: widget.product?.imagemUrl ?? '');
 
     if (widget.product != null) {
-      _selectedCategory = widget.product!.categoryEnum;
+      _selectedCategoryLabel = widget.product!.categoria;
       _ativo = widget.product!.ativo;
     }
   }
@@ -57,6 +76,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _precoController.dispose();
     _estoqueController.dispose();
     _descricaoController.dispose();
+    _imagemUrlController.dispose();
     super.dispose();
   }
 
@@ -77,8 +97,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         preco: preco,
         estoque: estoque,
         descricao: _descricaoController.text.trim(),
-        categoria: _selectedCategory.label,
+        categoria: _selectedCategoryLabel,
         ativo: _ativo,
+        imagemUrl: _imagemUrlController.text.trim().isEmpty
+            ? null
+            : _imagemUrlController.text.trim(),
       );
 
       if (_isEditing) {
@@ -176,28 +199,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 },
               ),
               const SizedBox(height: AppSpacing.md),
-              _buildDropdownField<ProductCategory>(
-                label: 'Categoria *',
-                hint: 'Selecione a categoria',
-                icon: Icons.category,
-                value: _selectedCategory,
-                items: ProductCategory.values.map((cat) {
-                  return DropdownMenuItem(
-                    value: cat,
-                    child: Row(
-                      children: [
-                        Icon(cat.icon, size: 20, color: AppColors.accentPrimary),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(cat.label, style: AppTextStyles.bodyMedium),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _selectedCategory = value);
-                },
-                validator: (value) => value == null ? 'Selecione uma categoria' : null,
-              ),
+              _buildCategoryDropdown(),
               const SizedBox(height: AppSpacing.md),
               _buildTextField(
                 controller: _marcaController,
@@ -291,6 +293,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 maxLines: 3,
                 validator: (value) => null,
               ),
+              const SizedBox(height: AppSpacing.md),
+              _buildTextField(
+                controller: _imagemUrlController,
+                label: 'URL da Imagem',
+                hint: 'https://imagem.com/imagem.jpg',
+                icon: Icons.image,
+                keyboardType: TextInputType.url,
+                validator: (value) {
+                  if (value != null && value.trim().isNotEmpty) {
+                    final uri = Uri.tryParse(value.trim());
+                    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+                      return 'URL inválida';
+                    }
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: AppSpacing.xl),
               _buildSectionTitle('Status'),
               Container(
@@ -311,7 +330,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     style: AppTextStyles.bodySmall,
                   ),
                   value: _ativo,
-                  activeColor: AppColors.accentPrimary,
+                  activeThumbColor: AppColors.accentPrimary,
                   onChanged: (value) => setState(() => _ativo = value),
                   contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                 ),
@@ -338,6 +357,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedCategoryLabel,
+      items: _allCategories.map((cat) {
+        return DropdownMenuItem<String>(
+          value: cat.label,
+          child: Row(
+            children: [
+              Icon(cat.icon, size: 20, color: AppColors.accentPrimary),
+              const SizedBox(width: AppSpacing.sm),
+              Text(cat.label, style: AppTextStyles.bodyMedium),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        if (value != null) setState(() => _selectedCategoryLabel = value);
+      },
+      validator: (value) => value == null ? 'Selecione uma categoria' : null,
+      style: AppTextStyles.bodyLarge,
+      dropdownColor: AppColors.surfaceElevated,
+      decoration: InputDecoration(
+        labelText: 'Categoria *',
+        hintText: 'Selecione a categoria',
+        prefixIcon: Icon(Icons.category, color: AppColors.accentPrimary),
       ),
     );
   }
@@ -373,30 +421,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       validator: validator,
       onChanged: onChanged,
       style: AppTextStyles.bodyLarge,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: AppColors.accentPrimary),
-      ),
-    );
-  }
-
-  Widget _buildDropdownField<T>({
-    required String label,
-    required String hint,
-    required IconData icon,
-    required T value,
-    required List<DropdownMenuItem<T>> items,
-    required void Function(T?) onChanged,
-    String? Function(T?)? validator,
-  }) {
-    return DropdownButtonFormField<T>(
-      value: value,
-      items: items,
-      onChanged: onChanged,
-      validator: validator,
-      style: AppTextStyles.bodyLarge,
-      dropdownColor: AppColors.surfaceElevated,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

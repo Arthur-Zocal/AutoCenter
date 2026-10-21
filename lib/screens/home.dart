@@ -175,6 +175,7 @@ class AzHomePage extends StatelessWidget {
       _CategoryData(Icons.light_mode, 'Faróis e Lâmpadas'),
       _CategoryData(Icons.local_gas_station, 'Lubrificantes'),
       _CategoryData(Icons.battery_charging_full, 'Baterias'),
+      _CategoryData(Icons.layers, 'Adesivo/Envelopamento'),
     ];
 
     return GridView.count(

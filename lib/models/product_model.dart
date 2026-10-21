@@ -34,6 +34,7 @@ class Product {
   final bool ativo;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? imagemUrl;
 
   Product({
     this.id = '',
@@ -45,6 +46,7 @@ class Product {
     required this.marca,
     required this.sku,
     this.ativo = true,
+    this.imagemUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -60,6 +62,7 @@ class Product {
       'marca': marca,
       'sku': sku.toUpperCase(),
       'ativo': ativo,
+      'imagemUrl': imagemUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -75,6 +78,7 @@ class Product {
       'marca': marca,
       'sku': sku.toUpperCase(),
       'ativo': ativo,
+      'imagemUrl': imagemUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -90,6 +94,7 @@ class Product {
       marca: map['marca'] ?? '',
       sku: map['sku'] ?? '',
       ativo: map['ativo'] ?? true,
+      imagemUrl: map['imagemUrl'],
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
     );
@@ -117,6 +122,7 @@ class Product {
     String? marca,
     String? sku,
     bool? ativo,
+    String? imagemUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -130,6 +136,7 @@ class Product {
       marca: marca ?? this.marca,
       sku: sku ?? this.sku,
       ativo: ativo ?? this.ativo,
+      imagemUrl: imagemUrl ?? this.imagemUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

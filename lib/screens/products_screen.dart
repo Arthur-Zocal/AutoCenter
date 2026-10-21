@@ -32,6 +32,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     'Faróis e Lâmpadas',
     'Lubrificantes',
     'Baterias',
+    'Adesivo/Envelopamento',
   ];
 
   static const Map<String, String> _sortOptions = {
@@ -944,6 +945,56 @@ class _ProductListCard extends StatelessWidget {
                     style: AppTextStyles.bodySmall,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                if (product.imagemUrl != null && product.imagemUrl!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        product.imagemUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: AppColors.surfaceOverlay,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: AppColors.accentPrimary,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: AppColors.surfaceOverlay,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image,
+                                  size: 32,
+                                  color: AppColors.textDim,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Imagem indisponível',
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textDim),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.md),
