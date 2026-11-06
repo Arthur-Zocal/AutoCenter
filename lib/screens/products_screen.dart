@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
+import '../services/cart_service.dart';
 import '../services/product_service.dart';
+import 'cart_screen.dart';
 import 'product_form_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cart_badge_button.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String? initialCategory;
@@ -85,6 +88,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             content: const Text('Produto excluído com sucesso'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
+            duration: AppDurations.snackBar,
           ),
         );
       } catch (e) {
@@ -97,6 +101,44 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _addToCart(Product product) async {
+    try {
+      await CartController.instance.addProduct(product);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${product.nome}" adicionado ao carrinho'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          duration: AppDurations.snackBar,
+          action: SnackBarAction(
+            label: 'VER CARRINHO',
+            textColor: AppColors.textOnAccent,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CartScreen()),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -114,6 +156,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           content: Text(product == null ? 'Produto cadastrado!' : 'Produto atualizado!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
+          duration: AppDurations.snackBar,
         ),
       );
     }
@@ -128,6 +171,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       appBar: AppBar(
         title: Text('Produtos', style: AppTextStyles.headlineSmall),
         actions: [
+          const CartBadgeButton(),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
             child: IconButton.filled(
@@ -191,6 +235,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         product: products[index],
                         onEdit: () => _navigateToForm(product: products[index]),
                         onDelete: () => _deleteProduct(products[index]),
+                        onAddToCart: () => _addToCart(products[index]),
                       );
                     },
                   ),
@@ -815,11 +860,13 @@ class _ProductListCard extends StatelessWidget {
   final Product product;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onAddToCart;
 
   const _ProductListCard({
     required this.product,
     required this.onEdit,
     required this.onDelete,
+    required this.onAddToCart,
   });
 
   @override
@@ -878,6 +925,18 @@ class _ProductListCard extends StatelessWidget {
                                     style: AppTextStyles.labelSmall.copyWith(color: AppColors.error, fontWeight: FontWeight.w700),
                                   ),
                                 ),
+                              if (product.estoque <= 0) ...[
+                                if (!product.ativo)
+                                  const SizedBox(width: AppSpacing.xs),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                                  decoration: AppDecorations.badgeError,
+                                  child: Text(
+                                    'INDISPONÍVEL',
+                                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.error, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
                               PopupMenuButton<String>(
                                 icon: Icon(Icons.more_vert, color: AppColors.textDim, size: 24),
                                 tooltip: 'Mais opções',
@@ -1001,8 +1060,45 @@ class _ProductListCard extends StatelessWidget {
                 _buildInfoRow('CATEGORIA', product.categoria, AppColors.accentGlow),
                 const SizedBox(height: AppSpacing.sm),
                 _buildInfoRow('ESTOQUE', product.stockStatus, product.stockColor == Colors.green ? AppColors.success : (product.stockColor == Colors.orange ? AppColors.warning : AppColors.error)),
-                const SizedBox(height: AppSpacing.sm),
-                _buildInfoRow('VALOR', product.formattedPrice, AppColors.accentPrimary),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('VALOR', style: AppTextStyles.labelMedium),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          product.formattedPrice,
+                          style: AppTextStyles.monoLarge.copyWith(
+                            color: AppColors.accentPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    IconButton.filled(
+                      icon: const Icon(Icons.add_shopping_cart, size: 24),
+                      tooltip: product.estoque > 0 && product.ativo
+                          ? 'Adicionar ao carrinho'
+                          : 'Produto indisponível',
+                      onPressed: product.estoque > 0 && product.ativo
+                          ? onAddToCart
+                          : null,
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.accentPrimary,
+                        foregroundColor: AppColors.textOnAccent,
+                        disabledBackgroundColor: AppColors.surfaceOverlay,
+                        disabledForegroundColor: AppColors.textDim,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

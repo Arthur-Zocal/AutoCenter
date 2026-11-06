@@ -119,6 +119,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
+          duration: AppDurations.snackBar,
         ),
       );
 

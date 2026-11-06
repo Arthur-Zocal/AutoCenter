@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
 import '../models/user_model.dart';
+import '../theme/app_theme.dart';
 import 'home.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -61,6 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           content: Text('Conta criada com sucesso!'),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
+          duration: AppDurations.snackBar,
         ),
       );
 

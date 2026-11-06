@@ -55,6 +55,10 @@ class AppBorder {
   static const accentGlow = BorderSide(color: AppColors.accentGlow, width: 2.0);
 }
 
+class AppDurations {
+  static const snackBar = Duration(seconds: 2);
+}
+
 class AppShadows {
   static const none = [];
   static const card = [

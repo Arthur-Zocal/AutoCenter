@@ -1,20 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/adesivo_envelopamento_model.dart';
+import 'jsonbin_config.dart';
 
 class JsonBinService {
-  static const String _baseUrl = 'https://api.jsonbin.io/v3/b';
-  static const String _binId = '6ad02873ac6210605a32616e';
-  static const String _masterKey =
-      '\$2a\$10\$qGjJzTXcxvG/xvDRQ.z4muLRUu1Ityf0BZ6.uvP.KogB7VaHVVGny';
-
   static const Map<String, String> _headers = {
     'Content-Type': 'application/json',
-    'X-Master-Key': _masterKey,
+    'X-Master-Key': JsonBinConfig.masterKey,
   };
 
-  String get _binUrl => '$_baseUrl/$_binId';
-  String get _latestUrl => '$_baseUrl/$_binId/latest';
+  String get _binUrl => '${JsonBinConfig.baseUrl}/${JsonBinConfig.adesivosBinId}';
+  String get _latestUrl => '$_binUrl/latest';
 
   Future<List<dynamic>> _fetchBinData() async {
     final response = await http.get(Uri.parse(_latestUrl), headers: _headers);

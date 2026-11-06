@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'profile_screen.dart';
 import 'products_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cart_badge_button.dart';
 
 class AzHomePage extends StatelessWidget {
   const AzHomePage({super.key});
@@ -16,6 +17,7 @@ class AzHomePage extends StatelessWidget {
           style: AppTextStyles.headlineSmall,
         ),
         actions: [
+          const CartBadgeButton(),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () {

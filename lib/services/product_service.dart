@@ -349,6 +349,40 @@ class ProductService {
     return await _adesivoService.checkSkuExists(sku, excludeId: excludeId);
   }
 
+  Future<void> decrementStock(String id, int quantity) async {
+    if (quantity <= 0) return;
+
+    final product = await getProductById(id);
+    if (product == null) {
+      throw Exception('Produto não encontrado.');
+    }
+
+    if (product.estoque < quantity) {
+      throw Exception(
+        'Estoque insuficiente para "${product.nome}". Disponível: ${product.estoque}.',
+      );
+    }
+
+    final newStock = product.estoque - quantity;
+
+    if (_isAdesivoCategory(product.categoria)) {
+      final adesivo = await _adesivoService.consultarPorId(id);
+      if (adesivo == null) {
+        throw Exception('Produto não encontrado.');
+      }
+      await _adesivoService.atualizar(
+        adesivo.copyWith(estoque: newStock),
+      );
+    } else {
+      if (_currentUid.isEmpty) throw Exception('Usuário não autenticado');
+
+      await _productsRef.doc(id).update({
+        'estoque': newStock,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   Future<bool> _checkSkuInFirebase(String sku, {String? excludeId}) async {
     final querySnapshot = await _productsRef
         .where('sku', isEqualTo: sku.toUpperCase())

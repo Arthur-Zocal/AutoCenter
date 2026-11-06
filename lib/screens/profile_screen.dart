@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/user_service.dart';
+import '../services/cart_service.dart';
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
+import 'my_orders_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -77,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           content: Text('Perfil atualizado com sucesso!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
+          duration: AppDurations.snackBar,
         ),
       );
     } catch (e) {
@@ -94,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
+    CartController.instance.reset();
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
@@ -238,6 +242,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ],
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  Container(
+                    decoration: AppDecorations.card,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.receipt_long_outlined,
+                        color: AppColors.accentPrimary,
+                      ),
+                      title: Text(
+                        'Minhas compras',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Acompanhe o histórico dos seus pedidos',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textDim,
+                      ),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const MyOrdersScreen(),
+                          ),
+                        );
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                     ),
                   ),
