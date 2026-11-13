@@ -482,7 +482,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: AppSpacing.lg),
             _buildSectionTitle(
               'Forma de pagamento',
-              subtitle: 'Pagamentos simulados para demonstração.',
+              subtitle: 'Pagamentos.',
             ),
             _buildPaymentCard(),
             const SizedBox(height: AppSpacing.lg),
@@ -787,10 +787,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text('QR Code simulado', style: AppTextStyles.titleMedium),
+          Text('QR Code', style: AppTextStyles.titleMedium),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Este pagamento é apenas para preencher e demonstrar o fluxo.',
+            'Use o QR Code acima ou copie o código Pix abaixo para efetuar o pagamento.',
             style: AppTextStyles.caption,
             textAlign: TextAlign.center,
           ),
@@ -924,7 +924,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Dados fictícios. Nenhuma cobrança será realizada.',
+            '',
             style: AppTextStyles.caption,
           ),
         ],

@@ -17,8 +17,11 @@ class ShippingQuote {
 }
 
 class ShippingService {
-  static const double hqLatitude = -21.6789;
-  static const double hqLongitude = -49.7422;
+  /// CEP da sede: São João das Duas Pontes - SP.
+  static const String originCep = '15640-049';
+
+  static const double hqLatitude = -20.3880724;
+  static const double hqLongitude = -50.3783617;
 
   static const double freeRadiusKm = 20.0;
   static const double stepKm = 10.0;
@@ -115,7 +118,19 @@ class ShippingService {
     return value;
   }
 
+  // Coordenadas aproximadas usadas quando o CEP não retorna latitude/longitude.
   static const Map<String, List<double>> _cityCoordinates = {
+    'sao joao das duas pontes': [-20.3880724, -50.3783617],
+    'fernandopolis': [-20.2839, -50.2464],
+    "estrela d'oeste": [-20.2878, -50.4008],
+    "guarani d'oeste": [-20.0739, -50.3389],
+    'ouroeste': [-20.0011, -50.3731],
+    'indiapora': [-19.9797, -50.2894],
+    'macedonia': [-20.1472, -50.1961],
+    'pedranopolis': [-20.2478, -50.1144],
+    'jales': [-20.2678, -50.5494],
+    'votuporanga': [-20.4228, -49.9728],
+    'sao jose do rio preto': [-20.8197, -49.3794],
     'lins': [-21.6789, -49.7422],
     'getulina': [-21.7986, -49.9286],
     'guaicara': [-21.6219, -49.9867],

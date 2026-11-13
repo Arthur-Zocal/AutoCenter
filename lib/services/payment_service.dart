@@ -24,8 +24,8 @@ class PaymentService {
     if (metodo == PaymentMethod.pix) {
       return const PaymentResult(
         approved: true,
-        message: 'Pagamento Pix confirmado (simulado).',
-        resumo: 'Pix (simulado)',
+        message: 'Pagamento Pix confirmado.',
+        resumo: 'Pix',
       );
     }
 
@@ -42,7 +42,7 @@ class PaymentService {
 
     return PaymentResult(
       approved: true,
-      message: 'Pagamento aprovado (simulado).',
+      message: 'Pagamento aprovado.',
       resumo: resumo,
     );
   }
